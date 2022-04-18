@@ -58,7 +58,9 @@ class MainActivity : AppCompatActivity() {
 
         if(socket == null){
             Toast.makeText(this,"Socket Null",Toast.LENGTH_LONG).show()
-
+        }
+        else{
+            Toast.makeText(this,"Socket Connected",Toast.LENGTH_LONG).show()
         }
     }
 }
