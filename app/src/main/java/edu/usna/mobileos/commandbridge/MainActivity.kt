@@ -21,9 +21,10 @@ class MainActivity : AppCompatActivity() {
     lateinit var btManager: BluetoothManager
     lateinit var btAdapter: BluetoothAdapter
     lateinit var socket: BluetoothSocket
+
     //Bluetooth variables
     val uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
-    val macAddress  = "8C:DE:00:01:8A:2C"
+    val macAddress  = "8C:DE:00:01:8A:2C" //Make selectable for other devices
 
 
     // OVERRIDE THE ON CREATE FUNCTION
@@ -41,10 +42,11 @@ class MainActivity : AppCompatActivity() {
             btAdapter = btManager.getAdapter()}
     }
 
+    
     override fun onDestroy() {
         super.onDestroy()
         // ensure the Bluetooth socket is closed
-        //socket.close()
+        socket.close()
     }
 
     // Function to connect bluetooth device.
@@ -80,5 +82,10 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(this, "Socket initialized", Toast.LENGTH_LONG).show()}}
         }
         t.start()
+    }
+
+
+    fun sendCommandRequest(v:View?,command:String){
+        socket.outputStream.write(command.toByteArray())
     }
 }
