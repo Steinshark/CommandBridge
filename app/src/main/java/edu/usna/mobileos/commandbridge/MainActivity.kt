@@ -3,69 +3,109 @@ package edu.usna.mobileos.commandbridge
 import android.Manifest
 import android.bluetooth.*
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import com.github.eltonvs.obd.command.ObdCommand
+import com.github.eltonvs.obd.command.engine.*
+import com.github.eltonvs.obd.command.control.*
+import com.github.eltonvs.obd.command.fuel.*
+import com.github.eltonvs.obd.command.temperature.*
+
+import com.github.eltonvs.obd.command.pressure.*
+
+import com.github.eltonvs.obd.connection.ObdDeviceConnection
+import com.jjoe64.graphview.GraphView
+import com.jjoe64.graphview.series.DataPoint
+import com.jjoe64.graphview.series.LineGraphSeries
+import kotlinx.coroutines.runBlocking
 import java.io.IOException
-import java.lang.reflect.Method
 import java.util.*
+import java.time.LocalDateTime
 
-class MainActivity : AppCompatActivity() {
-    // Class inits
-    var btCapable = true
-
-    //Bluetooth environment
+class MainActivity : AppCompatActivity(), DRInterface {
     lateinit var btManager: BluetoothManager
     lateinit var btAdapter: BluetoothAdapter
-    lateinit var socket: BluetoothSocket
-
-    //Bluetooth variables
-    val uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
-    val macAddress  = "8C:DE:00:01:8A:2C" //Make selectable for other devices
-
-
-    // OVERRIDE THE ON CREATE FUNCTION
-    // SETUP THE BLUETOOTH ENVIRONMENT
+    lateinit var socket:    BluetoothSocket
+    lateinit var obdCon:    ObdDeviceConnection
+    lateinit var graphview: GraphView
+    var btCapable       = true
+    val uuid            = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")                   //Can be random (I think)
+    val displayModes    = arrayOf("RPM","Lambda","Airflow","Speed","VANOS")
+    val macAddress      = "8C:DE:00:01:8A:2C"                                                       //Hard code BTdev MAC
+    var commands       = mutableMapOf<String,Command>(
+        "RPM" to Command(RPMCommand() as ObdCommand, "RPM", obdCon),
+        "SPD" to Command(SpeedCommand() as ObdCommand, "Speed", obdCon),
+        "THR" to Command(ThrottlePositionCommand() as ObdCommand, "Throttle Pos", obdCon),
+        "MAF" to Command(MassAirFlowCommand() as ObdCommand, "MAF Rate", obdCon),
+        "IAT" to Command(AirIntakeTemperatureCommand() as ObdCommand, "Intake Air Temp", obdCon),
+        "ECT" to Command(EngineCoolantTemperatureCommand() as ObdCommand, "Engine Coolant Temp", obdCon),
+        "IMP" to Command(IntakeManifoldPressureCommand() as ObdCommand, "Intake Manifold Pressure", obdCon),
+        "TAD" to Command(TimingAdvanceCommand() as ObdCommand, "Timing Advance", obdCon),
+        "ERT" to Command(RuntimeCommand() as ObdCommand, "Engine Run Time", obdCon),
+        "ELD" to Command(AbsoluteLoadCommand() as ObdCommand, "Engine Load", obdCon),
+        "VIN" to Command(VINCommand() as ObdCommand, "VIN Decode", obdCon),
+        "TRC" to Command(TroubleCodesCommand() as ObdCommand, "Trouble Codes", obdCon),
+        "RES" to Command(ResetTroubleCodesCommand() as ObdCommand, "Reset Trouble Codes", obdCon),
+        "DFC" to Command(DistanceSinceCodesClearedCommand() as ObdCommand, "Distance Since Cleared", obdCon),
+        "RES" to Command(FuelPressureCommand() as ObdCommand, "Fuel Pressure", obdCon)
+    )
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        //Check and init the BT manager and adapter
         btManager = getSystemService(BluetoothManager::class.java) as (BluetoothManager)
         if(btManager.adapter == null){
             Toast.makeText(baseContext,"No Bluetooth Adapter Found",Toast.LENGTH_LONG).show()
-            btCapable = false}
+            btCapable = false
+        }
         else{
-            btAdapter = btManager.getAdapter()}
+            btAdapter = btManager.getAdapter()
+        }
     }
-
-    
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.options_menu,menu)
+        return super.onCreateOptionsMenu(menu)
+    }
+    override fun onOptionsItemSelected(item : MenuItem): Boolean{
+        return when(item.itemId) {
+            R.id.fullView -> {
+                true
+            }
+            R.id.individualView -> {
+                val dialog = RadioButtonDialog(displayModes,this as DRInterface)
+                dialog.show(supportFragmentManager, "Set DisplayMode")
+                true
+            }
+            R.id.multiView -> {
+                val dialog = CheckBoxDialog(displayModes,this as DRInterface)
+                dialog.show(supportFragmentManager, "Set DisplayMode")
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
     override fun onDestroy() {
         super.onDestroy()
-        // ensure the Bluetooth socket is closed
         socket.close()
     }
-
-    // Function to connect bluetooth device.
-    // Attached to a button in the GUI.
     fun connectBluetooth(v: View?){
         val t = Thread {
-            //Check that device is btCapable and that adapter exists
             if (btCapable == false || btAdapter == null) {
                 runOnUiThread{
-                    Toast.makeText(this, "Bluetooth unavailable", Toast.LENGTH_LONG).show()}
-                return@Thread}
-
-            //Check that BT permissions were allowed by user, and if not, ask them for permission
+                    Toast.makeText(this, "Bluetooth unavailable", Toast.LENGTH_LONG).show()
+                }
+                return@Thread
+            }
             if (ActivityCompat.checkSelfPermission(this,Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED){
-                ActivityCompat.requestPermissions(this,arrayOf(Manifest.permission.BLUETOOTH_CONNECT),2)}
-
-
-            //Get Device -> in this case it is an OBD 2 scanner
-            //Attempt to create a socket with the device
+                ActivityCompat.requestPermissions(this,arrayOf(Manifest.permission.BLUETOOTH_CONNECT),2)
+            }
             val btDevice = btAdapter.getRemoteDevice(macAddress)
             socket = btDevice.createInsecureRfcommSocketToServiceRecord(uuid)
             try {
@@ -73,19 +113,50 @@ class MainActivity : AppCompatActivity() {
             }
             catch (e: IOException) {
                 runOnUiThread{
-                    Toast.makeText(this, "${e.message} - EXPECTED", Toast.LENGTH_SHORT).show()}
-                return@Thread}
-
+                    Toast.makeText(this,"Socket could not connect", Toast.LENGTH_SHORT).show()}
+                return@Thread
+            }
             //Ensure that the socket is actually connected
             if (socket.isConnected) {
+                obdCon = ObdDeviceConnection(socket.inputStream,socket.outputStream)
                 runOnUiThread{
-                    Toast.makeText(this, "Socket initialized", Toast.LENGTH_LONG).show()}}
+                    Toast.makeText(this, "Socket initialized", Toast.LENGTH_LONG).show()}
+            }
         }
         t.start()
     }
 
+    override fun setDisplayMode(items:ArrayList<String>){
+        if (items.size <= 0){
+            Toast.makeText(this,"No Items selected for display!",Toast.LENGTH_SHORT)
+        }
+        else if(items.size == 1){
+            setContentView(R.layout.display_mode_one)
 
-    fun sendCommandRequest(v:View?,command:String){
-        socket.outputStream.write(command.toByteArray())
+        }
+        else{
+            setContentView(R.layout.display_mode_group)
+
+        }
     }
+    override fun doNothing(item:String){}
+    override fun cancel(){}
+}
+
+
+
+class Command(val ex:ObdCommand,val name:String, val obdCon:ObdDeviceConnection){
+    var graphData       = LineGraphSeries<DataPoint>()
+    var graphInitTime   = Calendar.getInstance().timeInMillis
+    var graphLength     = 60
+
+    fun runCommand() = runBlocking{
+        val response = obdCon.run(ex)
+        val x = ((graphInitTime - Calendar.getInstance().timeInMillis) / 1000) as Double
+        val y = response.value as Double
+        graphData.appendData(DataPoint(x,y),true,graphLength)
+    }
+
+
+
 }

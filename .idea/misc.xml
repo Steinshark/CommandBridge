@@ -5,6 +5,9 @@
       <map>
         <entry key="..\:/CommandBridge/app/src/main/res/layout/activity_main.xml" value="0.1" />
         <entry key="app/src/main/res/layout/activity_main.xml" value="0.14855072463768115" />
+        <entry key="app/src/main/res/layout/display_mode_group.xml" value="0.3342391304347826" />
+        <entry key="app/src/main/res/layout/display_mode_one.xml" value="0.3342391304347826" />
+        <entry key="app/src/main/res/menu/menu.xml" value="0.26296296296296295" />
       </map>
     </option>
   </component>
