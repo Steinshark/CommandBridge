@@ -40,23 +40,7 @@ class MainActivity : AppCompatActivity(), DRInterface {
     val uuid            = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")                   //Can be random (I think)
     val displayModes    = arrayOf("RPM","Lambda","Airflow","Speed","VANOS")
     val macAddress      = "8C:DE:00:01:8A:2C"                                                       //Hard code BTdev MAC
-    var commands       = mutableMapOf<String,Command>(
-        "RPM" to Command(RPMCommand() as ObdCommand, "RPM", obdCon),
-        "SPD" to Command(SpeedCommand() as ObdCommand, "Speed", obdCon),
-        "THR" to Command(ThrottlePositionCommand() as ObdCommand, "Throttle Pos", obdCon),
-        "MAF" to Command(MassAirFlowCommand() as ObdCommand, "MAF Rate", obdCon),
-        "IAT" to Command(AirIntakeTemperatureCommand() as ObdCommand, "Intake Air Temp", obdCon),
-        "ECT" to Command(EngineCoolantTemperatureCommand() as ObdCommand, "Engine Coolant Temp", obdCon),
-        "IMP" to Command(IntakeManifoldPressureCommand() as ObdCommand, "Intake Manifold Pressure", obdCon),
-        "TAD" to Command(TimingAdvanceCommand() as ObdCommand, "Timing Advance", obdCon),
-        "ERT" to Command(RuntimeCommand() as ObdCommand, "Engine Run Time", obdCon),
-        "ELD" to Command(AbsoluteLoadCommand() as ObdCommand, "Engine Load", obdCon),
-        "VIN" to Command(VINCommand() as ObdCommand, "VIN Decode", obdCon),
-        "TRC" to Command(TroubleCodesCommand() as ObdCommand, "Trouble Codes", obdCon),
-        "RES" to Command(ResetTroubleCodesCommand() as ObdCommand, "Reset Trouble Codes", obdCon),
-        "DFC" to Command(DistanceSinceCodesClearedCommand() as ObdCommand, "Distance Since Cleared", obdCon),
-        "RES" to Command(FuelPressureCommand() as ObdCommand, "Fuel Pressure", obdCon)
-    )
+    lateinit var commands: MutableMap<String,Command>
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -120,12 +104,29 @@ class MainActivity : AppCompatActivity(), DRInterface {
             if (socket.isConnected) {
                 obdCon = ObdDeviceConnection(socket.inputStream,socket.outputStream)
                 runOnUiThread{
-                    Toast.makeText(this, "Socket initialized", Toast.LENGTH_LONG).show()}
+                    Toast.makeText(this, "Socket initialized", Toast.LENGTH_LONG).show()
+                }
+                commands  = mutableMapOf<String,Command>(
+                    "RPM" to Command(RPMCommand() as ObdCommand, "RPM", obdCon),
+                    "SPD" to Command(SpeedCommand() as ObdCommand, "Speed", obdCon),
+                    "THR" to Command(ThrottlePositionCommand() as ObdCommand, "Throttle Pos", obdCon),
+                    "MAF" to Command(MassAirFlowCommand() as ObdCommand, "MAF Rate", obdCon),
+                    "IAT" to Command(AirIntakeTemperatureCommand() as ObdCommand, "Intake Air Temp", obdCon),
+                    "ECT" to Command(EngineCoolantTemperatureCommand() as ObdCommand, "Engine Coolant Temp", obdCon),
+                    "IMP" to Command(IntakeManifoldPressureCommand() as ObdCommand, "Intake Manifold Pressure", obdCon),
+                    "TAD" to Command(TimingAdvanceCommand() as ObdCommand, "Timing Advance", obdCon),
+                    "ERT" to Command(RuntimeCommand() as ObdCommand, "Engine Run Time", obdCon),
+                    "ELD" to Command(AbsoluteLoadCommand() as ObdCommand, "Engine Load", obdCon),
+                    "VIN" to Command(VINCommand() as ObdCommand, "VIN Decode", obdCon),
+                    "TRC" to Command(TroubleCodesCommand() as ObdCommand, "Trouble Codes", obdCon),
+                    "RES" to Command(ResetTroubleCodesCommand() as ObdCommand, "Reset Trouble Codes", obdCon),
+                    "DFC" to Command(DistanceSinceCodesClearedCommand() as ObdCommand, "Distance Since Cleared", obdCon),
+                    "RES" to Command(FuelPressureCommand() as ObdCommand, "Fuel Pressure", obdCon)
+                )
             }
         }
         t.start()
     }
-
     override fun setDisplayMode(items:ArrayList<String>){
         if (items.size <= 0){
             Toast.makeText(this,"No Items selected for display!",Toast.LENGTH_SHORT)
@@ -142,9 +143,6 @@ class MainActivity : AppCompatActivity(), DRInterface {
     override fun doNothing(item:String){}
     override fun cancel(){}
 }
-
-
-
 class Command(val ex:ObdCommand,val name:String, val obdCon:ObdDeviceConnection){
     var graphData       = LineGraphSeries<DataPoint>()
     var graphInitTime   = Calendar.getInstance().timeInMillis
@@ -156,7 +154,4 @@ class Command(val ex:ObdCommand,val name:String, val obdCon:ObdDeviceConnection)
         val y = response.value as Double
         graphData.appendData(DataPoint(x,y),true,graphLength)
     }
-
-
-
 }
