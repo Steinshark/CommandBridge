@@ -10,13 +10,12 @@ class CommandService: Service(){
         TODO("Not yet implemented")
     }
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.i("test","onStart!")
         start_graphing()
         return START_STICKY
     }
 
     fun start_graphing(){
-        Thread.sleep(500)
+        Thread.sleep(1000)
         val broadcastIntent = Intent()
         broadcastIntent.action = "Update"
         baseContext.sendBroadcast(broadcastIntent)

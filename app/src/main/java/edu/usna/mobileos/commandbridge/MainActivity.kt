@@ -57,7 +57,6 @@ class MainActivity : AppCompatActivity(), DRInterface, RecyclerListener {
         override fun onReceive(context: Context?, intent: Intent?) {
             for(command in graphsInView){
                 command?.runCommand()
-                Log.i("test","DID WORK")
             }
             recyclerAdapter = RecyclerAdapter(graphsInView)
             if(continueUpdate) {
@@ -171,13 +170,12 @@ class MainActivity : AppCompatActivity(), DRInterface, RecyclerListener {
             Toast.makeText(this,"No Items selected for display!",Toast.LENGTH_SHORT)
         }
         else{
-            setContentView(R.layout.display_mode_graph)
+            setContentView(R.layout.recycler_view)
             graphRecyclerView = findViewById(R.id.recyclerView)
             graphsInView = ArrayList()
             for(name in items){
                 graphsInView.add(commands[name])
             }
-
             recyclerAdapter = RecyclerAdapter(graphsInView)
             graphRecyclerView.adapter = recyclerAdapter
         }
@@ -192,8 +190,6 @@ class MainActivity : AppCompatActivity(), DRInterface, RecyclerListener {
         val serviceIntent = Intent(baseContext,CommandService::class.java)
         startService(serviceIntent)
     }
-
-
 }
 class Command(val ex:ObdCommand,val name:String, val obdCon:ObdDeviceConnection){
     var graphData       = LineGraphSeries<DataPoint>()
@@ -201,6 +197,7 @@ class Command(val ex:ObdCommand,val name:String, val obdCon:ObdDeviceConnection)
     var graphLength     = 60
 
     fun runCommand() = runBlocking{
+        Log.i("test","RUNNING COM for $name")
         val response = obdCon.run(ex)
         val x = ((graphInitTime - Calendar.getInstance().timeInMillis) / 1000) as Double
         val y = response.value as Double
