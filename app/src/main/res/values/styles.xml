@@ -18,4 +18,40 @@
         <item name="android:layout_marginBottom">10sp</item>
 
     </style>
+
+    <style name="statictitlebar">
+        <item name ="android:layout_width">match_parent</item>
+        <item name ="android:layout_height">0dp</item>
+        <item name ="android:layout_weight">.5</item>
+        <item name ="android:textSize">20sp</item>
+        <item name ="android:gravity">center</item>
+        <item name ="android:fontFamily">sans-serif-black</item>
+    </style>
+
+    <style name="staticLabel">
+        <item name ="android:layout_width">0dp</item>
+        <item name ="android:layout_height">match_parent</item>
+        <item name ="android:layout_weight">2</item>
+        <item name ="android:textSize">15sp</item>
+        <item name ="android:gravity">center</item>
+
+    </style>
+    <style name="staticValue">
+        <item name ="android:layout_width">0dp</item>
+        <item name ="android:layout_height">match_parent</item>
+        <item name ="android:layout_weight">1</item>
+        <item name ="android:textSize">15sp</item>
+        <item name ="android:gravity">center</item>
+
+    </style>
+
+   <style name="staticRow">
+        <item name ="android:layout_width">match_parent</item>
+        <item name ="android:layout_height">0dp</item>
+        <item name ="android:layout_weight">1</item>
+        <item name ="android:orientation">horizontal</item>
+        <item name ="android:layout_marginTop">10sp</item>
+        <item name ="android:layout_marginBottom">10sp</item>
+
+    </style>
 </resources>

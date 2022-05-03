@@ -41,16 +41,20 @@ class CommandService: Service() {
     }
 
     fun start_graphing() {
-        Log.i("service","\tstarting graphing")
-        val broadcastIntent = Intent()
-        broadcastIntent.action = "Update"
 
-        while(true){
-            Thread.sleep(500)
-            if (sendUpdateMessage){
-                baseContext.sendBroadcast(broadcastIntent)
+        val refreshThread = Thread{
+            Log.i("service","\tstarting thread")
+            val broadcastIntent = Intent()
+            broadcastIntent.action = "Update"
+
+            while(true){
+                Thread.sleep(500)
+                if (sendUpdateMessage){
+                    baseContext.sendBroadcast(broadcastIntent)
+                }
+
             }
-
         }
+        refreshThread.start()
     }
 }

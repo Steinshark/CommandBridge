@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <TextView
+        style="@style/statictitlebar"
+        android:layout_width="match_parent"
+        android:text="Single Display Mode: RPM"/>
+    <LinearLayout style="@style/staticRow">
+
+        <TextView android:text = "RPM: " style="@style/staticLabel"/>
+        <TextView android:id="@+id/rpm" android:text = "EX1: " style="@style/staticValue"/>
+
+        <TextView android:text = "Speed: " style="@style/staticLabel"/>
+        <TextView android:id="@+id/speed" android:text = "EX1: " style="@style/staticValue"/>
+
+        <TextView android:text = "Throttle Position: " style="@style/staticLabel"/>
+        <TextView android:id="@+id/throttleposition" android:text = "EX1: " style="@style/staticValue"/>
+
+    </LinearLayout>
+    <LinearLayout style="@style/staticRow">
+        <TextView android:text = "Mass Airflow: " style="@style/staticLabel"/>
+        <TextView android:id="@+id/massairflow" android:text = "EX1: " style="@style/staticValue"/>
+
+        <TextView android:text = "Intake Air Temp: " style="@style/staticLabel"/>
+        <TextView android:id="@+id/intakeairtemp" android:text = "EX1: " style="@style/staticValue"/>
+
+        <TextView android:text = "Engine Coolant Temp: " style="@style/staticLabel"/>
+        <TextView android:id="@+id/enginecoolanttemp" android:text = "EX1: " style="@style/staticValue"/>
+
+
+    </LinearLayout>
+    <LinearLayout style="@style/staticRow">
+        <TextView android:text = "Intake Manifold PSI: " style="@style/staticLabel"/>
+        <TextView android:id="@+id/intakemanifoldpsi" android:text = "EX1: " style="@style/staticValue"/>
+
+        <TextView android:text = "Timing Advance: " style="@style/staticLabel"/>
+        <TextView android:id="@+id/timingadvance" android:text = "EX1: " style="@style/staticValue"/>
+
+        <TextView android:text = "Engine Runtime: " style="@style/staticLabel"/>
+        <TextView android:id="@+id/engineruntime" android:text = "EX1: " style="@style/staticValue"/>
+
+
+    </LinearLayout>
+    <LinearLayout style="@style/staticRow">
+        <TextView  android:text = "Engine Load: " style="@style/staticLabel"/>
+        <TextView android:id="@+id/engineload" android:text = "EX1: " style="@style/staticValue"/>
+
+        <TextView android:text = "VIN: " style="@style/staticLabel"/>
+        <TextView android:id="@+id/vin" android:text = "EX1: " style="@style/staticValue"/>
+
+        <TextView android:text = "Fuel Pressure: " style="@style/staticLabel"/>
+        <TextView android:id="@+id/fuelpressure" android:text = "EX1: " style="@style/staticValue"/>
+
+
+    </LinearLayout>
+    <LinearLayout style="@style/staticRow">
+        <Button android:id="@+id/readcodes" android:text="Read Codes" style="@style/staticValue"/>
+
+        <Button android:id="@+id/clearcodes" android:text = "Clear Codes" style="@style/staticValue"/>
+
+        <TextView android:text = "Dist Since Cleared: " style="@style/staticLabel"/>
+        <TextView  android:id="@+id/distsincecleared" android:text ="EX1: " style="@style/staticValue"/>
+
+    </LinearLayout>
+</LinearLayout>
