@@ -44,14 +44,15 @@ class MainActivity : AppCompatActivity(), DRInterface, RecyclerListener {
     lateinit var graphRecyclerView: RecyclerView
     lateinit var recyclerAdapter: RecyclerAdapter
     lateinit var pendingIntent: PendingIntent
+    lateinit var commands: MutableMap<String,Command>
+    lateinit var alarmManager: AlarmManager
+
     var btCapable       = true
     val uuid            = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")             //Can be random (I think)
     val displayModes    = arrayOf("RPM","Lambda","Airflow","Speed","VANOS")
     val macAddress      = "8C:DE:00:01:8A:2C"                                                       //Hard code BTdev MAC
     var graphsInView    = ArrayList<Command?>()
-    lateinit var commands: MutableMap<String,Command>
     var continueUpdate = true
-    lateinit var alarmManager: AlarmManager
 
     private val UpdateReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -72,6 +73,7 @@ class MainActivity : AppCompatActivity(), DRInterface, RecyclerListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         btManager = getSystemService(BluetoothManager::class.java) as (BluetoothManager)
+
         if(btManager.adapter == null){
             Toast.makeText(baseContext,"No Bluetooth Adapter Found",Toast.LENGTH_LONG).show()
             btCapable = false
@@ -86,6 +88,7 @@ class MainActivity : AppCompatActivity(), DRInterface, RecyclerListener {
         registerReceiver(UpdateReceiver,intentFilter)
 
         startCommandService()
+
     }
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.options_menu,menu)
@@ -188,7 +191,18 @@ class MainActivity : AppCompatActivity(), DRInterface, RecyclerListener {
     }
     fun startCommandService(){
         val serviceIntent = Intent(baseContext,CommandService::class.java)
+        serviceIntent.putExtra("CycleUpdate",true)                                                  //Set to update
+        serviceIntent.putExtra("RefreshTime",.5)                                                  //Update every .5 seconds
+        Log.i("main","Starting service")
         startService(serviceIntent)
+        Log.i("main","\tstarted")
+    }
+    fun updateServiceRefresh(){
+        val broadcastIntent = Intent()
+        broadcastIntent.action = "Refresh"
+        broadcastIntent.putExtra("CycleUpdate",true)
+        broadcastIntent.putExtra("RefreshTime",.5)
+        baseContext.sendBroadcast(broadcastIntent)
     }
 }
 class Command(val ex:ObdCommand,val name:String, val obdCon:ObdDeviceConnection){
