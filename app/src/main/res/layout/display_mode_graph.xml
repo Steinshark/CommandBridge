@@ -14,10 +14,15 @@
         />
 
     <com.jjoe64.graphview.GraphView
+        style="@style/graphviewstyle"
         android:layout_width = "match_parent"
         android:layout_height = "0dp"
         android:layout_weight="8"
-        android:id = "@+id/singlegraph"
+        android:id = "@+id/graph"
+        android:layout_marginBottom="10sp"
+        android:layout_marginTop="10sp"
+        android:layout_marginLeft="10sp"
+        android:layout_marginRight="10sp"
         />
 
 </LinearLayout>

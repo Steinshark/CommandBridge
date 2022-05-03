@@ -1,22 +1,27 @@
 package edu.usna.mobileos.commandbridge
 
 import android.Manifest
+import android.app.AlarmManager
+import android.app.PendingIntent
 import android.bluetooth.*
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.recyclerview.widget.RecyclerView
 import com.github.eltonvs.obd.command.ObdCommand
 import com.github.eltonvs.obd.command.engine.*
 import com.github.eltonvs.obd.command.control.*
-import com.github.eltonvs.obd.command.fuel.*
 import com.github.eltonvs.obd.command.temperature.*
 
 import com.github.eltonvs.obd.command.pressure.*
@@ -28,19 +33,42 @@ import com.jjoe64.graphview.series.LineGraphSeries
 import kotlinx.coroutines.runBlocking
 import java.io.IOException
 import java.util.*
-import java.time.LocalDateTime
+import kotlin.collections.ArrayList
 
-class MainActivity : AppCompatActivity(), DRInterface {
+class MainActivity : AppCompatActivity(), DRInterface, RecyclerListener {
     lateinit var btManager: BluetoothManager
     lateinit var btAdapter: BluetoothAdapter
     lateinit var socket:    BluetoothSocket
     lateinit var obdCon:    ObdDeviceConnection
     lateinit var graphview: GraphView
+    lateinit var graphRecyclerView: RecyclerView
+    lateinit var recyclerAdapter: RecyclerAdapter
+    lateinit var pendingIntent: PendingIntent
     var btCapable       = true
-    val uuid            = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")                   //Can be random (I think)
+    val uuid            = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")             //Can be random (I think)
     val displayModes    = arrayOf("RPM","Lambda","Airflow","Speed","VANOS")
     val macAddress      = "8C:DE:00:01:8A:2C"                                                       //Hard code BTdev MAC
+    var graphsInView    = ArrayList<Command?>()
     lateinit var commands: MutableMap<String,Command>
+    var continueUpdate = true
+    lateinit var alarmManager: AlarmManager
+
+    private val UpdateReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            for(command in graphsInView){
+                command?.runCommand()
+                Log.i("test","DID WORK")
+            }
+            recyclerAdapter = RecyclerAdapter(graphsInView)
+            if(continueUpdate) {
+                startCommandService()
+            }
+        }
+    }
+
+
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -52,6 +80,13 @@ class MainActivity : AppCompatActivity(), DRInterface {
         else{
             btAdapter = btManager.getAdapter()
         }
+
+        //Setup our intent filter
+        val intentFilter = IntentFilter()
+        intentFilter.addAction("Update")
+        registerReceiver(UpdateReceiver,intentFilter)
+
+        startCommandService()
     }
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.options_menu,menu)
@@ -127,21 +162,38 @@ class MainActivity : AppCompatActivity(), DRInterface {
         }
         t.start()
     }
-    override fun setDisplayMode(items:ArrayList<String>){
+    override fun setStaticDisplayMode(){
+        setContentView(R.layout.display_mode_graph)
+
+    }
+    override fun setGraphDisplayMode(items: ArrayList<String>){
         if (items.size <= 0){
             Toast.makeText(this,"No Items selected for display!",Toast.LENGTH_SHORT)
         }
-        else if(items.size == 1){
-            setContentView(R.layout.display_mode_one)
-
-        }
         else{
-            setContentView(R.layout.display_mode_group)
+            setContentView(R.layout.display_mode_graph)
+            graphRecyclerView = findViewById(R.id.recyclerView)
+            graphsInView = ArrayList()
+            for(name in items){
+                graphsInView.add(commands[name])
+            }
 
+            recyclerAdapter = RecyclerAdapter(graphsInView)
+            graphRecyclerView.adapter = recyclerAdapter
         }
+
     }
     override fun doNothing(item:String){}
     override fun cancel(){}
+    override fun onItemClick(task: String) {
+        TODO("Not yet implemented")
+    }
+    fun startCommandService(){
+        val serviceIntent = Intent(baseContext,CommandService::class.java)
+        startService(serviceIntent)
+    }
+
+
 }
 class Command(val ex:ObdCommand,val name:String, val obdCon:ObdDeviceConnection){
     var graphData       = LineGraphSeries<DataPoint>()

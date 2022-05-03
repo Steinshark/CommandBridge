@@ -24,7 +24,7 @@ class RadioButtonDialog(var commandItems: Array<String>, var myInterface: DRInte
     override fun onClick(dialog: DialogInterface, itemId: Int) {
         val clickedThing = when (itemId) {
             Dialog.BUTTON_NEGATIVE -> {}
-            Dialog.BUTTON_POSITIVE -> myInterface.setDisplayMode(arrayListOf(item))
+            Dialog.BUTTON_POSITIVE -> myInterface.setGraphDisplayMode(arrayListOf(item))
             else -> item = commandItems[itemId]                                                     //Set clicked item as item to return
         }
     }
@@ -43,7 +43,7 @@ class CheckBoxDialog(var commandItems: Array<String>, var myInterface: DRInterfa
     }
     override fun onClick(dialog: DialogInterface, id: Int) {
         when (id) {
-            Dialog.BUTTON_NEGATIVE -> {myInterface.setDisplayMode(returningModes as ArrayList<String>) }
+            Dialog.BUTTON_NEGATIVE -> {myInterface.setGraphDisplayMode(returningModes as ArrayList<String>) }
             Dialog.BUTTON_POSITIVE -> {return}
         }
     }                                    //For Return
