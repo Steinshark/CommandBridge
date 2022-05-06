@@ -19,7 +19,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.recyclerview.widget.RecyclerView
-import com.github.eltonvs.obd.command.ObdCommand
+import com.github.eltonvs.obd.command.*
 import com.github.eltonvs.obd.command.engine.*
 import com.github.eltonvs.obd.command.control.*
 import com.github.eltonvs.obd.command.temperature.*
@@ -32,6 +32,7 @@ import com.jjoe64.graphview.series.DataPoint
 import com.jjoe64.graphview.series.LineGraphSeries
 import kotlinx.coroutines.runBlocking
 import java.io.IOException
+import java.lang.NullPointerException
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -49,18 +50,21 @@ class MainActivity : AppCompatActivity(), DRInterface, RecyclerListener {
     var displayMode: String = "Static"
     var btCapable       = true
     val uuid            = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")             //Can be random (I think)
-    val displayModes    = arrayOf("RPM","Lambda","Airflow","Speed","VANOS")
+    val displayModes    = arrayOf("RPM","Speed","Throttle","Airflow","IAT","Coolant Temp","IMP","TimingAdvance")
     val macAddress      = "8C:DE:00:01:8A:2C"                                                       //Hard code BTdev MAC
     var graphsInView    = ArrayList<Command?>()
     var continueUpdate  = true
     var serviceRunning  = false
+    var noDataWarned    = false
     private val UpdateReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             for(command in graphsInView){
                 command?.runCommand()
             }
             if(displayMode == "Graph"){
-                recyclerAdapter = RecyclerAdapter(graphsInView)
+                graphRecyclerView.adapter?.notifyDataSetChanged()
+                //recyclerAdapter = RecyclerAdapter(graphsInView)
+                //graphRecyclerView.adapter = recyclerAdapter
             }
             else if(displayMode == "Static"){
                 updateStaticView()
@@ -88,9 +92,23 @@ class MainActivity : AppCompatActivity(), DRInterface, RecyclerListener {
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.options_menu,menu)
         return super.onCreateOptionsMenu(menu)
+        if(serviceRunning){
+            stopService(serviceIntent)
+            serviceRunning = false
+        }
     }
     override fun onOptionsItemSelected(item : MenuItem): Boolean{
+        if(serviceRunning){
+            stopService(serviceIntent)
+            serviceRunning = false
+        }
         return when(item.itemId) {
+            R.id.homeView ->{
+
+                setContentView(R.layout.activity_main)
+                true
+
+            }
             R.id.valuesView -> {
                 setStaticDisplayMode()
                 true
@@ -142,21 +160,21 @@ class MainActivity : AppCompatActivity(), DRInterface, RecyclerListener {
                     Toast.makeText(this, "Socket initialized", Toast.LENGTH_LONG).show()
                 }
                 commands  = mutableMapOf<String,Command>(
-                    "RPM" to Command(RPMCommand() as ObdCommand, "RPM", obdCon),
-                    "SPD" to Command(SpeedCommand() as ObdCommand, "Speed", obdCon),
-                    "THR" to Command(ThrottlePositionCommand() as ObdCommand, "Throttle Pos", obdCon),
-                    "MAF" to Command(MassAirFlowCommand() as ObdCommand, "MAF Rate", obdCon),
-                    "IAT" to Command(AirIntakeTemperatureCommand() as ObdCommand, "Intake Air Temp", obdCon),
-                    "ECT" to Command(EngineCoolantTemperatureCommand() as ObdCommand, "Engine Coolant Temp", obdCon),
-                    "IMP" to Command(IntakeManifoldPressureCommand() as ObdCommand, "Intake Manifold Pressure", obdCon),
-                    "TAD" to Command(TimingAdvanceCommand() as ObdCommand, "Timing Advance", obdCon),
-                    "ERT" to Command(RuntimeCommand() as ObdCommand, "Engine Run Time", obdCon),
-                    "ELD" to Command(AbsoluteLoadCommand() as ObdCommand, "Engine Load", obdCon),
-                    "VIN" to Command(VINCommand() as ObdCommand, "VIN Decode", obdCon),
-                    "TRC" to Command(TroubleCodesCommand() as ObdCommand, "Trouble Codes", obdCon),
-                    "RES" to Command(ResetTroubleCodesCommand() as ObdCommand, "Reset Trouble Codes", obdCon),
-                    "DFC" to Command(DistanceSinceCodesClearedCommand() as ObdCommand, "Distance Since Cleared", obdCon),
-                    "RES" to Command(FuelPressureCommand() as ObdCommand, "Fuel Pressure", obdCon)
+                    "RPM" to Command(RPMCommand() as ObdCommand, "RPM", obdCon,this),
+                    "Speed" to Command(SpeedCommand() as ObdCommand, "Speed", obdCon,this),
+                    "Throttle" to Command(ThrottlePositionCommand() as ObdCommand, "Throttle Position", obdCon,this),
+                    "Airflow" to Command(MassAirFlowCommand() as ObdCommand, "MAF Rate", obdCon,this),
+                    "IAT" to Command(AirIntakeTemperatureCommand() as ObdCommand, "Intake Air Temp", obdCon,this),
+                    "Coolant Temp" to Command(EngineCoolantTemperatureCommand() as ObdCommand, "Engine Coolant Temp", obdCon,this),
+                    "IMP" to Command(IntakeManifoldPressureCommand() as ObdCommand, "Intake Manifold Pressure", obdCon,this),
+                    "Timing Advance" to Command(TimingAdvanceCommand() as ObdCommand, "Timing Advance", obdCon,this),
+                    "Engine Uptime" to Command(RuntimeCommand() as ObdCommand, "Engine Run Time", obdCon,this),
+                    "ELD" to Command(AbsoluteLoadCommand() as ObdCommand, "Engine Load", obdCon,this),
+                    "VIN" to Command(VINCommand() as ObdCommand, "VIN Decode", obdCon,this),
+                    "TRC" to Command(TroubleCodesCommand() as ObdCommand, "Trouble Codes", obdCon,this),
+                    "RES" to Command(ResetTroubleCodesCommand() as ObdCommand, "Reset Trouble Codes", obdCon,this),
+                    "DFC" to Command(DistanceSinceCodesClearedCommand() as ObdCommand, "Distance Since Cleared", obdCon,this),
+                    "RES" to Command(FuelPressureCommand() as ObdCommand, "Fuel Pressure", obdCon,this)
                 )
             }
         }
@@ -165,28 +183,37 @@ class MainActivity : AppCompatActivity(), DRInterface, RecyclerListener {
     override fun setStaticDisplayMode(){
         setContentView(R.layout.static_display)
         displayMode = "Static"
-        startCommandService(true,.05)
-
+        startCommandService(true,3.0)
     }
     override fun setGraphDisplayMode(items: ArrayList<String>){
         if (items.size <= 0){
             Toast.makeText(this,"No Items selected for display!",Toast.LENGTH_SHORT)
         }
         else {
-            try {
-                setContentView(R.layout.recycler_view)
-                displayMode = "Graph"
-                graphRecyclerView = findViewById(R.id.recyclerView)
-                graphsInView = ArrayList()
-                for (name in items) {
+            setContentView(R.layout.recycler_view)
+            displayMode = "Graph"
+            graphRecyclerView = findViewById(R.id.recyclerView)
+            graphsInView = ArrayList()
+            for (name in items) {
+                Log.i("graphs","$name")
+                try {
                     graphsInView.add(commands[name])
                 }
-                recyclerAdapter = RecyclerAdapter(graphsInView)
-                graphRecyclerView.adapter = recyclerAdapter
-                startCommandService(true,0.5)                                                       //Updates graphs every .5 seconds
-            } catch (e: UninitializedPropertyAccessException) {                                     //Make sure commands actually exist
-                Toast.makeText(this, "No commands have been initialized!", Toast.LENGTH_SHORT).show()
+                catch (e: UninitializedPropertyAccessException) {                                     //Make sure commands actually exist
+                    Toast.makeText(this, "No commands have been initialized!", Toast.LENGTH_SHORT).show()
+                }
             }
+            Log.i("graphs","ended with $graphsInView")
+            recyclerAdapter = RecyclerAdapter(graphsInView)
+            graphRecyclerView.adapter = recyclerAdapter
+            startCommandService(true,3.0)
+            var title:TextView = findViewById(R.id.graphTitle)
+            if(items.size == 1){
+                title.text = "Single Graph View ${graphsInView[0]?.name}"
+            }
+            else{
+                title.text = "Multi Graph View"
+            }//Updates graphs every .5 seconds
         }
     }
     override fun doNothing(item:String){}
@@ -195,6 +222,7 @@ class MainActivity : AppCompatActivity(), DRInterface, RecyclerListener {
         TODO("Not yet implemented")
     }
     fun startCommandService(refreshMode:Boolean,refreshTime:Double){
+        serviceRunning = true
         serviceIntent = Intent(baseContext,CommandService::class.java)
         serviceIntent.putExtra("CycleUpdate",refreshMode)                                     //Set to update
         serviceIntent.putExtra("RefreshTime",refreshTime)                                     //Update every .5 seconds
@@ -208,32 +236,30 @@ class MainActivity : AppCompatActivity(), DRInterface, RecyclerListener {
         broadcastIntent.putExtra("RefreshTime",.5)
         baseContext.sendBroadcast(broadcastIntent)
     }
-    fun updateStaticView(){
+    fun updateStaticView() {
         var updatedSuccess = false
-
-        val rpm: TextView = findViewById(R.id.rpm)
-        val speed: TextView = findViewById(R.id.speed)
-        val throttleposition: TextView = findViewById(R.id.throttleposition)
-        val massairflow: TextView = findViewById(R.id.massairflow)
-        val intakeairtemp: TextView = findViewById(R.id.intakeairtemp)
-        val enginecoolanttemp: TextView = findViewById(R.id.enginecoolanttemp)
-        val intakemanifoldpsi: TextView = findViewById(R.id.intakemanifoldpsi)
-        val timingadvance: TextView = findViewById(R.id.timingadvance)
-        val engineruntime: TextView = findViewById(R.id.engineruntime)
-        val engineload: TextView = findViewById(R.id.engineload)
-        val vin: TextView = findViewById(R.id.vin)
-        val fuelpressure: TextView = findViewById(R.id.fuelpressure)
-
-        try{
+        try {
+            val rpm: TextView = findViewById(R.id.rpm)
+            val speed: TextView = findViewById(R.id.speed)
+            val throttleposition: TextView = findViewById(R.id.throttleposition)
+            val massairflow: TextView = findViewById(R.id.massairflow)
+            val intakeairtemp: TextView = findViewById(R.id.intakeairtemp)
+            val enginecoolanttemp: TextView = findViewById(R.id.enginecoolanttemp)
+            val intakemanifoldpsi: TextView = findViewById(R.id.intakemanifoldpsi)
+            val timingadvance: TextView = findViewById(R.id.timingadvance)
+            val engineruntime: TextView = findViewById(R.id.engineruntime)
+            val engineload: TextView = findViewById(R.id.engineload)
+            val vin: TextView = findViewById(R.id.vin)
+            val fuelpressure: TextView = findViewById(R.id.fuelpressure)
             commands["RPM"]?.fetchValue()
-            commands["SPD"]?.fetchValue()
-            commands["THR"]?.fetchValue()
-            commands["MAF"]?.fetchValue()
+            commands["Speed"]?.fetchValue()
+            commands["Throttle"]?.fetchValue()
+            commands["Airflow"]?.fetchValue()
             commands["IAT"]?.fetchValue()
-            commands["ECT"]?.fetchValue()
+            commands["Coolant Temp"]?.fetchValue()
             commands["IMP"]?.fetchValue()
-            commands["TAD"]?.fetchValue()
-            commands["ERT"]?.fetchValue()
+            commands["Timing Advance"]?.fetchValue()
+            commands["Engine Uptime"]?.fetchValue()
             commands["ELD"]?.fetchValue()
             commands["VIN"]?.fetchValue()
             commands["RES"]?.fetchValue()
@@ -252,35 +278,110 @@ class MainActivity : AppCompatActivity(), DRInterface, RecyclerListener {
             fuelpressure.text = commands["RES"]?.liveData.toString()
 
             updatedSuccess = true
-        }
-        catch(u: UninitializedPropertyAccessException){
-            Toast.makeText(this,"Values cannot be updated",Toast.LENGTH_LONG).show()
+        } catch (u: UninitializedPropertyAccessException) {
+            if (!noDataWarned) {
+                Toast.makeText(this, "Values cannot be updated", Toast.LENGTH_SHORT).show()
+                noDataWarned = true
+            }
             updatedSuccess = false
-        }
-        if(updatedSuccess && !serviceRunning){
-            startCommandService(true,0.5)
-        }
-        else if(!updatedSuccess){
-            stopService(serviceIntent)
-            serviceRunning = false
+        } catch (n: NullPointerException) {
+            if (updatedSuccess && !serviceRunning) {
+                startCommandService(true, 3.0)
+            } else if (!updatedSuccess) {
+                stopService(serviceIntent)
+                serviceRunning = false
+            }
         }
     }
 }
-class Command(val ex:ObdCommand,val name:String, val obdCon:ObdDeviceConnection){
+class Command(val ex:ObdCommand,val name:String, val obdCon:ObdDeviceConnection,val context: Context){
     var graphData       = LineGraphSeries<DataPoint>()
     var graphInitTime   = Calendar.getInstance().timeInMillis
     var graphLength     = 60
-    var liveData        = 0.0                                                                       //Twice's BAC
+    var liveData        = ""                                                                    //Twice's BAC
+    var warned          = false
+
     fun runCommand() = runBlocking{
         Log.i("test","RUNNING COM for $name")
-        val response = obdCon.run(ex)
-        val x = ((graphInitTime - Calendar.getInstance().timeInMillis) / 1000) as Double
-        val y = response.value as Double
+        val x = ((Calendar.getInstance().timeInMillis - graphInitTime) / 1000.0)
+        Log.i("graph","$x")
+        var y = 1.0
+        try {
+            val response = obdCon.run(ex)
+            y = response.value.toDouble()
+        }
+        catch(n : NonNumericResponseException){
+            Log.i("graph","non numeric $n")
+        }
+        catch(n : NoDataException){
+            Log.i("graph","no Data $n")
+        }
+        catch(s: StoppedException){
+            Log.i("graph","Stopped Exec")
+        }
+        catch(i: IOException){
+            Log.i("graph","Pipe broke")
+        }
+        catch(m: MisunderstoodCommandException){
+            Log.i("graph","Misunderstood")
+
+        }
+
         graphData.appendData(DataPoint(x,y),true,graphLength)
     }
 
     fun fetchValue() = runBlocking {
-        val response = obdCon.run(ex)
-        liveData = response.value as Double
+        try{
+            val response = obdCon.run(ex)
+            try{
+                liveData = response.value
+                Log.i("data","Recieved ${liveData}")
+            }
+            catch(c: ClassCastException){
+                Log.i("data","Recieved CLassCast${liveData}\n ${c}")
+
+            }
+            catch(n: NumberFormatException){
+                Log.i("data","Recieved NumberFormat ${liveData}\n ${n}")
+            }
+            catch(n: NonNumericResponseException){
+                Log.i("test","Non NumericResp \n${n}")
+
+            }
+        }
+        catch(n: NonNumericResponseException) {
+            Log.i("test","Non NumericResp \n${n}")
+            if (!warned) {
+                warned = true
+            }
+            else{
+
+            }
+        }
+        catch(n: NoDataException) {
+            Log.i("test","No Data Returned${n}")
+            if (!warned) {
+                warned = true
+            }
+            else{
+
+            }
+        }
+        catch(m: MisunderstoodCommandException){
+            Log.i("test","Misunderstood $liveData\n${m}")
+
+        }
+        catch(s: StoppedException){
+            Log.i("test","No Data Returned")
+            if (!warned) {
+                warned = true
+            }
+            else{
+
+            }
+        }
+        catch(i: IOException){
+            Log.i("test","Pipe broke")
+        }
     }
 }

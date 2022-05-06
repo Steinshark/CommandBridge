@@ -1,15 +1,19 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
-        android:id="@+id/valuesView"
+        android:id="@+id/homeView"
         android:orderInCategory="1"
+        android:title="Home"/>
+    <item
+        android:id="@+id/valuesView"
+        android:orderInCategory="2"
         android:title="View Values"/>
     <item
         android:id="@+id/individualView"
-        android:orderInCategory="2"
+        android:orderInCategory="3"
         android:title="Single Graph"/>
     <item
         android:id="@+id/multiView"
-        android:orderInCategory="3"
+        android:orderInCategory="4"
         android:title="Multiple Graphs"/>
 </menu>

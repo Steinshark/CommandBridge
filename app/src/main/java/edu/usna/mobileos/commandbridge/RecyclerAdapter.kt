@@ -1,5 +1,6 @@
 package edu.usna.mobileos.commandbridge
 
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -17,6 +18,7 @@ class TextItemViewHolder (val view : View) : RecyclerView.ViewHolder(view){
 
     // bind an item to a TextView
     fun bind(title: String, data: LineGraphSeries<DataPoint>) {
+        Log.i("recycle","Setting info $title")
         textView.text = title
         Graph.addSeries(data)
     }
@@ -36,7 +38,12 @@ class RecyclerAdapter(val data: ArrayList<Command?>) : RecyclerView.Adapter<Text
 
     // override our Bind function
     override fun onBindViewHolder(holder: TextItemViewHolder, position: Int) {
-        holder.bind(data[position]!!.name,data[position]!!.graphData)
+        try {
+            holder.bind(data[position]!!.name, data[position]!!.graphData)
+        }
+        catch(n: NullPointerException){
+            Log.i("recycle","Failed on $data")
+        }
     }
 }
 

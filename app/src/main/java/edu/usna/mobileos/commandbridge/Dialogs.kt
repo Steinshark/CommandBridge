@@ -43,8 +43,8 @@ class CheckBoxDialog(var commandItems: Array<String>, var myInterface: DRInterfa
     }
     override fun onClick(dialog: DialogInterface, id: Int) {
         when (id) {
-            Dialog.BUTTON_NEGATIVE -> {myInterface.setGraphDisplayMode(returningModes as ArrayList<String>) }
-            Dialog.BUTTON_POSITIVE -> {return}
+            Dialog.BUTTON_POSITIVE -> {myInterface.setGraphDisplayMode(returningModes as ArrayList<String>) }
+            Dialog.BUTTON_NEGATIVE -> {return}
         }
     }                                    //For Return
     override fun onClick(dialog: DialogInterface, itemId: Int, isChecked: Boolean) {                //For select items

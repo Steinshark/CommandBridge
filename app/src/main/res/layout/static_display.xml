@@ -8,7 +8,7 @@
     <TextView
         style="@style/statictitlebar"
         android:layout_width="match_parent"
-        android:text="Single Display Mode: RPM"/>
+        android:text="View Realtime Values"/>
     <LinearLayout style="@style/staticRow">
 
         <TextView android:text = "RPM: " style="@style/staticLabel"/>
@@ -63,7 +63,7 @@
         <Button android:id="@+id/clearcodes" android:text = "Clear Codes" style="@style/staticValue"/>
 
         <TextView android:text = "Dist Since Cleared: " style="@style/staticLabel"/>
-        <TextView  android:id="@+id/distsincecleared" android:text ="EX1: " style="@style/staticValue"/>
+        <TextView  android:id="@+id/distsincecleared" android:text ="NA " style="@style/staticValue"/>
 
     </LinearLayout>
 </LinearLayout>

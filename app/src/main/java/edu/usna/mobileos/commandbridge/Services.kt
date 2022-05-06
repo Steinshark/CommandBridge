@@ -10,7 +10,7 @@ import android.util.Log
 
 class CommandService: Service() {
 
-
+    lateinit var intentFilter: IntentFilter
     var sendUpdateMessage: Boolean = true
     var cycleDuration: Double = 0.5
 
@@ -33,11 +33,21 @@ class CommandService: Service() {
         start_graphing()
 
         //Create the intent filter to listen for updates from main
-        val intentFilter = IntentFilter()
+        intentFilter = IntentFilter()
         intentFilter.addAction("Refresh")
         registerReceiver(ToggleGraphFetchReceiver,intentFilter)
 
         return START_STICKY
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+    try{
+        unregisterReceiver(ToggleGraphFetchReceiver)
+    }
+    catch(i: IllegalArgumentException){
+    }
+
     }
 
     fun start_graphing() {

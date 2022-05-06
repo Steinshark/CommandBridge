@@ -3,13 +3,13 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="400sp"
     android:orientation="vertical"
     >
 
     <TextView
         android:id="@+id/recyclerText"
-        android:textColor="@color/black"
+        android:textColor="@color/white"
         android:textSize="30sp"
         android:layout_width="match_parent"
         android:layout_height="0dp"
