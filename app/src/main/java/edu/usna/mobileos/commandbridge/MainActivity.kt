@@ -375,19 +375,14 @@ class Command(val ex:ObdCommand,val name:String, val obdCon:ObdDeviceConnection,
             Log.i("test","Non NumericResp \n${n}")
             if (!warned) {
                 warned = true
-                Toast.makeText(context,"Data collection failed",Toast.LENGTH_SHORT)
-            }
-            else{// "if must have both main and else if used as an expression"
+                Toast.makeText(context,"Data collection failed",Toast.LENGTH_SHORT).show()
             }
         }
         catch(n: NoDataException) {
             Log.i("test","No Data Returned${n}")
             if (!warned) {
                 warned = true
-                Toast.makeText(context,"Data collection failed",Toast.LENGTH_SHORT)
-
-            }
-            else{
+                Toast.makeText(context,"Data collection failed",Toast.LENGTH_SHORT).show()
 
             }
         }
@@ -398,11 +393,9 @@ class Command(val ex:ObdCommand,val name:String, val obdCon:ObdDeviceConnection,
             Log.i("test","No Data Returned")
             if (!warned) {
                 warned = true
-                Toast.makeText(context,"Data collection failed",Toast.LENGTH_SHORT)
+                Toast.makeText(context,"Data collection failed",Toast.LENGTH_SHORT).show()
             }
-            else{
 
-            }
         }
         catch(i: IOException){
             Log.i("test","Pipe broke")
