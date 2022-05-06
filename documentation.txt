@@ -1,0 +1,85 @@
+Everett Stenberg
+m226252
+
+
+1) Design Overview 
+    
+    CommandBridge has 4 main functional components to its design.
+        1. Showin in "activity_main"    : Home screen to connect to bluetooth device
+        2. Showin in "static_display"   : Displays realtime values of vehicle sensors
+        3. Showin in "recycler_view"    : Shows a single graph of a sensor displayed
+        4. Showin in "recycler_view"    : Shows multiple graphs displayed of sensors 
+
+
+2) Class description
+
+    1) MainActivity 
+        
+        Purpose
+            Holds all major objects and datastructures.
+            All app functionality is controlled from here. 
+
+        Methods 
+            onCreate                - set up the environment 
+            onCreateOptionsMenu     - set up the options menu 
+            onOptionsItemSelected   - responsible for choosing between views.
+            onDestroy               - need to close the Bluetooth socket
+            connectBluetooth        - used for initiating the conenction between
+                                      the bluetooth device and the app. Also initializes 
+                                      instances of a "Command", which is the primary class 
+                                      responsible for fetching data 
+            setStaticDisplayMode    - does the work of setting the display mode to show 
+                                      values of the sensors. Called from onOptionsItemSelected.
+            setGraphDisplayMode     - used to change the display mode to graphing. Called from
+                                      onOptionsItemSelected.
+            doNothing               - easter egg 
+            cancel                  - overwritten for something...
+            onItemClick             - needed for the recycler view 
+            startCommandService     - starts the service in the background that constantly fetches 
+                                      data from the car 
+            updateStaticView        - fetches all values for the display value mode
+    2) Command 
+
+        Purpose 
+            Holds methods and data for talking between the car and the bluetooth device 
+            for a specific sensor. i.e. the speed sensor, or RPM sensor
+
+        Methods
+            runCommand              - Grabs the data from the car for that specific command 
+                                      and adds it to the class's stored graphing points to be 
+                                      graphed later 
+            fetchValue              - Grabs data from the car and updates the field in the 
+                                      class holding the most updated value for displaying later 
+
+    3) CommandService
+        Purpose 
+            Runs in the background to fetch sensor data every few seconds 
+
+        Methods
+            onBind                  - Needs to be overridden 
+            onStartCommand          - Starts the thread that will be used to fetch values from 
+                                      the bluetooth device 
+            onDestroy               - Used to unregister the broadcast receiver 
+            start_graphing          - holds the thread that constantly fetches the data  
+
+    4) RadioButtonDialog
+        Purpose 
+            Used to select a sensor to graph 
+        Methods
+            onCreateDialog          - Adds the options to the dialog that the user can pick from 
+                                      (different sensor types i.e. RPM, speed, etc...)
+            onClick                 - Returns the sensor as a string that will be graphed later  
+    
+    5) CheckBoxDialog
+        Purpose 
+            Used to select multiple sensors to graph 
+        Methods
+            onCreateDialog          - Adds the options to the dialog that the user can pick from 
+                                      (different sensor types i.e. RPM, speed, etc...)
+            onClick                 - Returns the several sensors as a string that will be graphed later  
+
+    6) TextItemViewHolder, RecyclerAdapter, and interface RecyclerListener
+        Purpose 
+            Provide the needed items for a recycler viewer. 
+            RecyclerView item holds 2 items: a textview (graph title), and a graph
+

@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.fragment.app.DialogFragment
 import java.lang.reflect.GenericArrayType
 
+//Used to fetch a single graph
 class RadioButtonDialog(var commandItems: Array<String>, var myInterface: DRInterface) : DialogFragment(), DialogInterface.OnClickListener {
 
     lateinit var item:String                                                                        //What to return
@@ -29,6 +30,7 @@ class RadioButtonDialog(var commandItems: Array<String>, var myInterface: DRInte
         }
     }
 }
+//Used to fetch multiple graphs
 class CheckBoxDialog(var commandItems: Array<String>, var myInterface: DRInterface) : DialogFragment(), DialogInterface.OnMultiChoiceClickListener, DialogInterface.OnClickListener {
 
     var returningModes = ArrayList<String>()

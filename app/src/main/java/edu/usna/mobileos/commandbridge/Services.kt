@@ -8,6 +8,7 @@ import android.content.IntentFilter
 import android.os.IBinder
 import android.util.Log
 
+//Service responsible for nudging application to get new sensor data
 class CommandService: Service() {
 
     lateinit var intentFilter: IntentFilter
@@ -26,6 +27,7 @@ class CommandService: Service() {
         TODO("Not yet implemented")
     }
 
+    //Start the thread to fetch new values upon instantiation
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.i("service","Launched ")
         sendUpdateMessage = intent!!.getBooleanExtra("CycleUpdate",true)
@@ -50,6 +52,7 @@ class CommandService: Service() {
 
     }
 
+    //Send a breadcast every "cycleDuration" seconds to tell MainActivity to update
     fun start_graphing() {
 
         val refreshThread = Thread{

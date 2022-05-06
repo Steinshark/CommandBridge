@@ -36,6 +36,12 @@ import java.lang.NullPointerException
 import java.util.*
 import kotlin.collections.ArrayList
 
+
+// Main activity has 4 distinct views.
+//  1 - "activity_main": Home screen to connect to bluetooth device
+//  2 - "static_display": Displays realtime values of vehicle sensors
+//  3 - "recycler_view":  Single graph of a sensor displayed
+//  4 - "recycler_view":  Multiple graphs displayed of sensors
 class MainActivity : AppCompatActivity(), DRInterface, RecyclerListener {
     lateinit var btManager: BluetoothManager
     lateinit var btAdapter: BluetoothAdapter
@@ -128,8 +134,11 @@ class MainActivity : AppCompatActivity(), DRInterface, RecyclerListener {
     }
     override fun onDestroy() {
         super.onDestroy()
-        if(socket != null){
+        try{
             socket.close()
+        }
+        catch(u: UninitializedPropertyAccessException){
+
         }
     }
     fun connectBluetooth(v: View?){
@@ -209,14 +218,21 @@ class MainActivity : AppCompatActivity(), DRInterface, RecyclerListener {
             startCommandService(true,3.0)
             var title:TextView = findViewById(R.id.graphTitle)
             if(items.size == 1){
-                title.text = "Single Graph View ${graphsInView[0]?.name}"
+                try{
+                    title.text = "Single Graph View ${graphsInView[0]?.name}"
+                }
+                catch(i: IndexOutOfBoundsException){
+                    Toast.makeText(this,"Values cannot be updated",Toast.LENGTH_SHORT).show()
+                }
             }
             else{
                 title.text = "Multi Graph View"
             }//Updates graphs every .5 seconds
         }
     }
-    override fun doNothing(item:String){}
+    override fun doNothing(item:String){
+        Log.i("gerg","Hello Greg")
+    }
     override fun cancel(){}
     override fun onItemClick(task: String) {
         TODO("Not yet implemented")
@@ -228,13 +244,6 @@ class MainActivity : AppCompatActivity(), DRInterface, RecyclerListener {
         serviceIntent.putExtra("RefreshTime",refreshTime)                                     //Update every .5 seconds
         Log.i("main","Starting service")
         startService(serviceIntent)
-    }
-    fun updateServiceRefresh(){
-        val broadcastIntent = Intent()
-        broadcastIntent.action = "Refresh"
-        broadcastIntent.putExtra("CycleUpdate",true)
-        broadcastIntent.putExtra("RefreshTime",.5)
-        baseContext.sendBroadcast(broadcastIntent)
     }
     fun updateStaticView() {
         var updatedSuccess = false
@@ -292,76 +301,91 @@ class MainActivity : AppCompatActivity(), DRInterface, RecyclerListener {
                 serviceRunning = false
             }
         }
+        catch (i: IndexOutOfBoundsException){
+            if (!noDataWarned) {
+                Toast.makeText(this, "Values cannot be updated", Toast.LENGTH_SHORT).show()
+                noDataWarned = true
+            }
+        }
     }
 }
+
+//Holds everything related to a distinct engine command. Contains methods to ask the car for data, and the
+// data structures for holding this data. This object is passed into the recycler view for building graphs,
+// and is queryed for displaying the static values as well.
 class Command(val ex:ObdCommand,val name:String, val obdCon:ObdDeviceConnection,val context: Context){
     var graphData       = LineGraphSeries<DataPoint>()
     var graphInitTime   = Calendar.getInstance().timeInMillis
     var graphLength     = 60
-    var liveData        = ""                                                                    //Twice's BAC
+    var liveData        = ""                                                                        //Twice's BAC
     var warned          = false
 
+    //Method used for grabbing data and converting it to graphable format
     fun runCommand() = runBlocking{
         Log.i("test","RUNNING COM for $name")
         val x = ((Calendar.getInstance().timeInMillis - graphInitTime) / 1000.0)
         Log.i("graph","$x")
         var y = 1.0
+
+        // Try to query
         try {
             val response = obdCon.run(ex)
             y = response.value.toDouble()
         }
+        // Many proprietary exceptions from the OBD library
         catch(n : NonNumericResponseException){
-            Log.i("graph","non numeric $n")
+            Log.i("graph","non numeric response\n$n")
         }
         catch(n : NoDataException){
-            Log.i("graph","no Data $n")
+            Log.i("graph","no Data:\n$n")
         }
         catch(s: StoppedException){
-            Log.i("graph","Stopped Exec")
+            Log.i("graph","Stopped Exec\n$s")
         }
         catch(i: IOException){
-            Log.i("graph","Pipe broke")
+            Log.i("graph","Pipe broke\n$i")
         }
         catch(m: MisunderstoodCommandException){
-            Log.i("graph","Misunderstood")
-
+            Log.i("graph","Misunderstood Command\n$m")
         }
 
+        // Put the new datapoint on the collection to build the graph in
+        // the layout
         graphData.appendData(DataPoint(x,y),true,graphLength)
     }
 
+    // Grabs the values for "static_display" view to query later.
     fun fetchValue() = runBlocking {
+
+        // Try to query
         try{
             val response = obdCon.run(ex)
-            try{
-                liveData = response.value
-                Log.i("data","Recieved ${liveData}")
-            }
-            catch(c: ClassCastException){
-                Log.i("data","Recieved CLassCast${liveData}\n ${c}")
+            liveData = response.value
+            Log.i("data","Recieved ${liveData}")
+        }
+        //Catch everything
+        catch(c: ClassCastException){
+            Log.i("data","Recieved CLassCast${liveData}\n ${c}")
 
-            }
-            catch(n: NumberFormatException){
-                Log.i("data","Recieved NumberFormat ${liveData}\n ${n}")
-            }
-            catch(n: NonNumericResponseException){
-                Log.i("test","Non NumericResp \n${n}")
-
-            }
+        }
+        catch(n: NumberFormatException){
+            Log.i("data","Recieved NumberFormat ${liveData}\n ${n}")
         }
         catch(n: NonNumericResponseException) {
             Log.i("test","Non NumericResp \n${n}")
             if (!warned) {
                 warned = true
+                Toast.makeText(context,"Data collection failed",Toast.LENGTH_SHORT)
             }
-            else{
-
+            else{// "if must have both main and else if used as an expression"
             }
         }
         catch(n: NoDataException) {
             Log.i("test","No Data Returned${n}")
             if (!warned) {
                 warned = true
+                Toast.makeText(context,"Data collection failed",Toast.LENGTH_SHORT)
+
             }
             else{
 
@@ -369,12 +393,12 @@ class Command(val ex:ObdCommand,val name:String, val obdCon:ObdDeviceConnection,
         }
         catch(m: MisunderstoodCommandException){
             Log.i("test","Misunderstood $liveData\n${m}")
-
         }
         catch(s: StoppedException){
             Log.i("test","No Data Returned")
             if (!warned) {
                 warned = true
+                Toast.makeText(context,"Data collection failed",Toast.LENGTH_SHORT)
             }
             else{
 
